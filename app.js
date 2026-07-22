@@ -237,7 +237,7 @@ window.app = (() => {
 
     function showIngresoForm() {
         document.getElementById('ingresoForm').reset();
-        document.getElementById('ingresoDate').value = getDateKey().replace(/\//g, '-');
+        document.getElementById('ingresoDate').value = getDateKey();
         openModal('modalIngreso');
         setTimeout(() => document.getElementById('ingresoAmount').focus(), 100);
     }
