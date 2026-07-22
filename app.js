@@ -260,103 +260,6 @@ window.app = (() => {
         closeModal('modalConfirm');
     }
 
-    // ---- Actions ----
-    async function saveDriver(e) {
-        if (e && typeof e.preventDefault === 'function') e.preventDefault();
-        const name = document.getElementById('driverName').value.trim();
-        const vehicle = document.getElementById('driverVehicle').value.trim();
-        const liters = parseFloat(document.getElementById('driverLiters').value) || 0;
-
-        if (!name || !vehicle || liters <= 0) return;
-
-        const dateKey = getDateKey();
-        const driver = {
-            id: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
-            name,
-            vehicle,
-            liters,
-            delivered: false,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            const dayData = await apiSaveDriver(dateKey, driver);
-            closeDriverForm();
-            refresh(dayData, dateKey);
-        } catch (err) {
-            console.error('Error saving driver:', err);
-            alert('Error al guardar chofer');
-        }
-    }
-
-    async function deleteDriver(id) {
-        showConfirm(
-            'Eliminar chofer',
-            '¿Eliminar este registro? Los litros se restarán del total asignado.',
-            async () => {
-                try {
-                    const dateKey = getDateKey();
-                    const dayData = await apiDeleteDriver(dateKey, id);
-                    refresh(dayData, dateKey);
-                } catch (err) {
-                    console.error('Error deleting driver:', err);
-                    alert('Error al eliminar chofer');
-                }
-            }
-        );
-    }
-
-    async function deliverDriver(id) {
-        showConfirm(
-            'Marcar como entregado',
-            '¿Confirmar la entrega de combustible a este chofer?',
-            async () => {
-                try {
-                    const dateKey = getDateKey();
-                    const dayData = await apiDeliverDriver(dateKey, id);
-                    refresh(dayData, dateKey);
-                } catch (err) {
-                    console.error('Error delivering:', err);
-                    alert('Error al marcar entregado');
-                }
-            }
-        );
-    }
-
-    async function saveIngreso(e) {
-        if (e && typeof e.preventDefault === 'function') e.preventDefault();
-        const amount = parseFloat(document.getElementById('ingresoAmount').value) || 0;
-        const dateStr = document.getElementById('ingresoDate').value;
-        const dateKey = dateStr.replace(/-/g, '/');
-
-        if (amount <= 0) return;
-
-        try {
-            const dayData = await apiSaveIngreso(dateKey, amount);
-            closeIngresoForm();
-            refresh(dayData, dateKey);
-        } catch (err) {
-            console.error('Error saving ingreso:', err);
-            alert('Error al ingresar litros');
-        }
-    }
-
-    async function doResetToday() {
-        showConfirm(
-            'Reiniciar hoy',
-            'Pondrá ingreso, asignado y almacenado de hoy a 0. ¿Continuar?',
-            async () => {
-                try {
-                    const dayData = await apiResetToday();
-                    refresh(dayData, getDateKey());
-                } catch (err) {
-                    console.error('Error resetting today:', err);
-                    alert('Error al reiniciar hoy');
-                }
-            }
-        );
-    }
-
     // ---- Report Modal ----
     let availableDates = [];
 
@@ -611,7 +514,9 @@ window.app = (() => {
                             await apiFullReset();
                             const freshData = await apiLoadDayData();
                             refresh(freshData, getDateKey());
-                        } else {
+                            alert('Reinicio completado.');
+                        }, 2000);
+                    } else {
                         await apiFullReset();
                         const freshData = await apiLoadDayData();
                         refresh(freshData, getDateKey());
