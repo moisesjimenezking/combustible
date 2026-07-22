@@ -69,33 +69,33 @@ const app = (() => {
         return res.json();
     }
 
-    // ---- Data Operations ----
-    async function loadDayData(dateKey = null) {
+    // ---- Data Operations (API calls) ----
+    async function apiLoadDayData(dateKey = null) {
         const key = dateKey || getDateKey();
         return apiGet(`/api/data/${key}`);
     }
 
-    async function saveIngreso(dateKey, amount) {
+    async function apiSaveIngreso(dateKey, amount) {
         return apiPost(`/api/data/${dateKey}/ingreso`, { amount });
     }
 
-    async function saveDriver(dateKey, driver) {
+    async function apiSaveDriver(dateKey, driver) {
         return apiPost(`/api/data/${dateKey}/drivers`, driver);
     }
 
-    async function deleteDriver(dateKey, driverId) {
+    async function apiDeleteDriver(dateKey, driverId) {
         return apiDelete(`/api/data/${dateKey}/drivers/${driverId}`);
     }
 
-    async function deliverDriver(dateKey, driverId) {
+    async function apiDeliverDriver(dateKey, driverId) {
         return apiPut(`/api/data/${dateKey}/drivers/${driverId}/deliver`);
     }
 
-    async function resetToday() {
+    async function apiResetToday() {
         return apiPost('/api/reset/today', {});
     }
 
-    async function fullReset() {
+    async function apiFullReset() {
         return apiPost('/api/reset/all', {});
     }
 
@@ -245,7 +245,7 @@ const app = (() => {
 
     // ---- Actions ----
     async function saveDriver(e) {
-        e.preventDefault();
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
         const name = document.getElementById('driverName').value.trim();
         const vehicle = document.getElementById('driverVehicle').value.trim();
         const liters = parseFloat(document.getElementById('driverLiters').value) || 0;
@@ -263,7 +263,7 @@ const app = (() => {
         };
 
         try {
-            const dayData = await saveDriver(dateKey, driver);
+            const dayData = await apiSaveDriver(dateKey, driver);
             closeDriverForm();
             refresh(dayData, dateKey);
         } catch (err) {
@@ -279,7 +279,7 @@ const app = (() => {
             async () => {
                 try {
                     const dateKey = getDateKey();
-                    const dayData = await deleteDriver(dateKey, id);
+                    const dayData = await apiDeleteDriver(dateKey, id);
                     refresh(dayData, dateKey);
                 } catch (err) {
                     console.error('Error deleting driver:', err);
@@ -296,7 +296,7 @@ const app = (() => {
             async () => {
                 try {
                     const dateKey = getDateKey();
-                    const dayData = await deliverDriver(dateKey, id);
+                    const dayData = await apiDeliverDriver(dateKey, id);
                     refresh(dayData, dateKey);
                 } catch (err) {
                     console.error('Error delivering:', err);
@@ -307,7 +307,7 @@ const app = (() => {
     }
 
     async function saveIngreso(e) {
-        e.preventDefault();
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
         const amount = parseFloat(document.getElementById('ingresoAmount').value) || 0;
         const dateStr = document.getElementById('ingresoDate').value;
         const dateKey = dateStr.replace(/-/g, '/');
@@ -315,7 +315,7 @@ const app = (() => {
         if (amount <= 0) return;
 
         try {
-            const dayData = await saveIngreso(dateKey, amount);
+            const dayData = await apiSaveIngreso(dateKey, amount);
             closeIngresoForm();
             refresh(dayData, dateKey);
         } catch (err) {
@@ -330,7 +330,7 @@ const app = (() => {
             'Pondrá ingreso, asignado y almacenado de hoy a 0. ¿Continuar?',
             async () => {
                 try {
-                    const dayData = await resetToday();
+                    const dayData = await apiResetToday();
                     refresh(dayData, getDateKey());
                 } catch (err) {
                     console.error('Error resetting today:', err);
@@ -346,8 +346,8 @@ const app = (() => {
             'Esto borrará TODOS los datos de todos los días. ¿Está completamente seguro?',
             async () => {
                 try {
-                    await fullReset();
-                    const dayData = await loadDayData();
+                    await apiFullReset();
+                    const dayData = await apiLoadDayData();
                     refresh(dayData, getDateKey());
                 } catch (err) {
                     console.error('Error full reset:', err);
@@ -366,7 +366,7 @@ const app = (() => {
     async function loadAndRefresh() {
         try {
             const dateKey = getDateKey();
-            const dayData = await loadDayData(dateKey);
+            const dayData = await apiLoadDayData(dateKey);
             refresh(dayData, dateKey);
         } catch (err) {
             console.error('Error loading data:', err);
