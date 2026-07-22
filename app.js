@@ -99,6 +99,23 @@ const app = (() => {
         return apiPost('/api/reset/all', {});
     }
 
+    async function apiLoadAllDates() {
+        const data = await apiGet('/api/data');
+        const dates = Object.keys(data)
+            .filter(k => /^\d{4}\/\d{2}\/\d{2}$/.test(k))
+            .map(k => ({ key: k, display: formatDateDisplay(k) }))
+            .sort((a, b) => b.key.localeCompare(a.key));
+        return dates;
+    }
+
+    async function apiLoadDayDataByDate(dateKey) {
+        return apiGet(`/api/data/${dateKey}`);
+    }
+
+    async function apiGetAvailableDates() {
+        return apiGet('/api/dates');
+    }
+
     // ---- UI Updates ----
     function updateClock() {
         const el = document.getElementById('venezuelaTime');
@@ -340,15 +357,265 @@ const app = (() => {
         );
     }
 
+    // ---- Report Modal ----
+    let availableDates = [];
+
+    function showReportModal() {
+        document.getElementById('reportFrom').value = '';
+        document.getElementById('reportTo').value = '';
+        document.getElementById('reportPreview').style.display = 'none';
+        openModal('modalReport');
+        loadAvailableDatesForReport();
+    }
+
+    function closeReportModal() {
+        closeModal('modalReport');
+    }
+
+    async function loadAvailableDatesForReport() {
+        try {
+            availableDates = await apiLoadAllDates();
+            const fromSelect = document.getElementById('reportFrom');
+            const toSelect = document.getElementById('reportTo');
+            fromSelect.innerHTML = '<option value="">Seleccionar</option>';
+            toSelect.innerHTML = '<option value="">Seleccionar</option>';
+            availableDates.forEach(d => {
+                fromSelect.innerHTML += `<option value="${d.key}">${d.display}</option>`;
+                toSelect.innerHTML += `<option value="${d.key}">${d.display}</option>`;
+            });
+        } catch (e) {
+            console.error('Error loading dates:', e);
+        }
+    }
+
+    function buildDatesList() {
+        const fromKey = document.getElementById('reportFrom').value.replace(/-/g, '/');
+        const toKey = document.getElementById('reportTo').value.replace(/-/g, '/');
+        if (!fromKey || !toKey) return null;
+        const dates = availableDates
+            .filter(d => d.key >= fromKey && d.key <= toKey)
+            .sort((a, b) => a.key.localeCompare(b.key));
+        if (!dates.length) return null;
+        document.getElementById('reportPreview').style.display = 'block';
+        document.getElementById('reportDatesList').innerHTML = dates.map(d => d.display).join(' → ');
+        return dates;
+    }
+
+    async function generateReport() {
+        const dates = buildDatesList();
+        if (!dates) {
+            alert('Selecciona un rango de fechas válido.');
+            return;
+        }
+
+        closeReportModal();
+        const printEl = document.getElementById('printReport');
+        let rows = '';
+        let totalIngreso = 0, totalAsignado = 0, totalAlmacenado = 0;
+
+        for (const date of dates) {
+            let dayData;
+            try {
+                dayData = await apiLoadDayDataByDate(date.key);
+            } catch {
+                continue;
+            }
+            totalIngreso += dayData.ingreso || 0;
+            totalAsignado += dayData.asignado || 0;
+            totalAlmacenado += dayData.almacenado || 0;
+
+            let driverRows = '';
+            if (dayData.drivers.length) {
+                driverRows = dayData.drivers.map(d => `
+                    <tr>
+                        <td>${escapeHtml(d.name)}</td>
+                        <td>${escapeHtml(d.vehicle)}</td>
+                        <td class="text-center">${formatNumber(d.liters)} L</td>
+                        <td class="text-center">${d.delivered ? '✓' : '—'}</td>
+                    </tr>`).join('');
+            }
+
+            rows += `
+                <div class="report-section">
+                    <h2 class="report-date">Reporte — ${date.display}</h2>
+                    <table class="report-table">
+                        <tr><td><strong>Ingreso</strong></td><td>${formatNumber(dayData.ingreso)} L</td></tr>
+                        <tr><td><strong>Asignado</strong></td><td>${formatNumber(dayData.asignado)} L</td></tr>
+                        <tr><td><strong>Almacenado</strong></td><td>${formatNumber(dayData.almacenado)} L</td></tr>
+                    </table>
+                    ${driverRows ? `
+                        <table class="report-drivers">
+                            <thead><tr><th>Chofer</th><th>Vehículo</th><th class="text-center">Litros</th><th class="text-center">Entregado</th></tr></thead>
+                            <tbody>${driverRows}</tbody>
+                        </table>
+                    ` : ''}
+                </div>`;
+        }
+
+        printEl.innerHTML = `
+            <div class="report-page">
+                <h1 class="report-title">Control de Combustible — Reporte</h1>
+                <p class="report-subtitle">${dates[0].display} al ${dates[dates.length - 1].display}</p>
+                <p class="report-generated">Generado: ${new Date().toLocaleString('es-VE')}</p>
+                ${rows}
+                <div class="report-summary">
+                    <h2>Resumen</h2>
+                    <table class="report-table">
+                        <tr><td><strong>Total Ingresado</strong></td><td>${formatNumber(totalIngreso)} L</td></tr>
+                        <tr><td><strong>Total Asignado</strong></td><td>${formatNumber(totalAsignado)} L</td></tr>
+                        <tr><td><strong>Total Almacenado</strong></td><td>${formatNumber(totalAlmacenado)} L</td></tr>
+                    </table>
+                </div>
+            </div>`;
+
+        // Show print view, trigger print, hide it after
+        printEl.style.display = 'block';
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => { printEl.style.display = 'none'; }, 500);
+        }, 200);
+    }
+
+    // ---- Actions ----
+    async function saveDriver(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        const name = document.getElementById('driverName').value.trim();
+        const vehicle = document.getElementById('driverVehicle').value.trim();
+        const liters = parseFloat(document.getElementById('driverLiters').value) || 0;
+
+        if (!name || !vehicle || liters <= 0) return;
+
+        const dateKey = getDateKey();
+        const driver = {
+            id: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
+            name,
+            vehicle,
+            liters,
+            delivered: false,
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            const dayData = await apiSaveDriver(dateKey, driver);
+            closeDriverForm();
+            refresh(dayData, dateKey);
+        } catch (err) {
+            console.error('Error saving driver:', err);
+            alert('Error al guardar chofer');
+        }
+    }
+
+    async function deleteDriver(id) {
+        showConfirm(
+            'Eliminar chofer',
+            '¿Eliminar este registro? Los litros se restarán del total asignado.',
+            async () => {
+                try {
+                    const dateKey = getDateKey();
+                    const dayData = await apiDeleteDriver(dateKey, id);
+                    refresh(dayData, dateKey);
+                } catch (err) {
+                    console.error('Error deleting driver:', err);
+                    alert('Error al eliminar chofer');
+                }
+            }
+        );
+    }
+
+    async function deliverDriver(id) {
+        showConfirm(
+            'Marcar como entregado',
+            '¿Confirmar la entrega de combustible a este chofer?',
+            async () => {
+                try {
+                    const dateKey = getDateKey();
+                    const dayData = await apiDeliverDriver(dateKey, id);
+                    refresh(dayData, dateKey);
+                } catch (err) {
+                    console.error('Error delivering:', err);
+                    alert('Error al marcar entregado');
+                }
+            }
+        );
+    }
+
+    async function saveIngreso(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        const amount = parseFloat(document.getElementById('ingresoAmount').value) || 0;
+        const dateStr = document.getElementById('ingresoDate').value;
+        const dateKey = dateStr.replace(/-/g, '/');
+
+        if (amount <= 0) return;
+
+        try {
+            const dayData = await apiSaveIngreso(dateKey, amount);
+            closeIngresoForm();
+            refresh(dayData, dateKey);
+        } catch (err) {
+            console.error('Error saving ingreso:', err);
+            alert('Error al ingresar litros');
+        }
+    }
+
     async function doFullReset() {
         showConfirm(
             'Reinicio completo',
-            'Esto borrará TODOS los datos de todos los días. ¿Está completamente seguro?',
+            'Se generará un PDF con los datos de hoy y se reiniciará todo. ¿Está completamente seguro?',
             async () => {
                 try {
-                    await apiFullReset();
-                    const dayData = await apiLoadDayData();
-                    refresh(dayData, getDateKey());
+                    // Export today's data to PDF first
+                    const dateKey = getDateKey();
+                    let todayData;
+                    try {
+                        todayData = await apiLoadDayDataByDate(dateKey);
+                    } catch {
+                        todayData = null;
+                    }
+
+                    if (todayData && (todayData.drivers.length > 0 || (todayData.ingreso || 0) > 0)) {
+                        const printEl = document.getElementById('printReport');
+                        const driverRows = todayData.drivers.map(d => `
+                            <tr>
+                                <td>${escapeHtml(d.name)}</td>
+                                <td>${escapeHtml(d.vehicle)}</td>
+                                <td class="text-center">${formatNumber(d.liters)} L</td>
+                                <td class="text-center">${d.delivered ? '✓' : '—'}</td>
+                            </tr>`).join('');
+
+                        printEl.innerHTML = `
+                            <div class="report-page">
+                                <h1 class="report-title">Control de Combustible — Reporte Final</h1>
+                                <p class="report-subtitle">Cierre de día: ${formatDateDisplay(dateKey)}</p>
+                                <p class="report-generated">Generado: ${new Date().toLocaleString('es-VE')}</p>
+                                <div class="report-section">
+                                    <table class="report-table">
+                                        <tr><td><strong>Ingreso</strong></td><td>${formatNumber(todayData.ingreso)} L</td></tr>
+                                        <tr><td><strong>Asignado</strong></td><td>${formatNumber(todayData.asignado)} L</td></tr>
+                                        <tr><td><strong>Almacenado</strong></td><td>${formatNumber(todayData.almacenado)} L</td></tr>
+                                    </table>
+                                    ${driverRows ? `
+                                        <table class="report-drivers">
+                                            <thead><tr><th>Chofer</th><th>Vehículo</th><th class="text-center">Litros</th><th class="text-center">Entregado</th></tr></thead>
+                                            <tbody>${driverRows}</tbody>
+                                        </table>
+                                    ` : ''}
+                                </div>
+                            </div>`;
+                        printEl.style.display = 'block';
+                        setTimeout(() => {
+                            window.print();
+                            setTimeout(() => { printEl.style.display = 'none'; }, 500);
+                        }, 200);
+                        // Wait for print dialog, then reset
+                        setTimeout(async () => {
+                            await apiFullReset();
+                            const freshData = await apiLoadDayData();
+                            refresh(freshData, getDateKey());
+                        } else {
+                        await apiFullReset();
+                        const freshData = await apiLoadDayData();
+                        refresh(freshData, getDateKey());
+                    }
                 } catch (err) {
                     console.error('Error full reset:', err);
                     alert('Error al reiniciar todo');
@@ -404,9 +671,11 @@ const app = (() => {
         saveIngreso,
         deleteDriver,
         deliverDriver,
-        resetToday: doResetToday,
-        fullReset: doFullReset,
-        closeConfirm
+        doFullReset,
+        closeConfirm,
+        showReportModal,
+        closeReportModal,
+        generateReport
     };
 })();
 
