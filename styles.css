@@ -733,8 +733,57 @@ body {
 }
 
 .modal-header-icon--green {
-    background: rgba(34, 197, 94, 0.1);
+    background: rgba(34, 197, 94, 0.15);
     color: var(--accent-green);
+}
+
+.modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.date-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.date-select:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
 .modal-header h3 {
@@ -777,6 +826,17 @@ body {
 
 .form-group-icon .input-wrapper {
     position: relative;
+}
+
+.form-group-icon .input-wrapper-two {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.form-group-icon .input-wrapper-two input {
+    flex: 1;
+    padding-left: 2rem;
 }
 
 .form-group-icon .input-icon {
@@ -1051,13 +1111,26 @@ body {
         padding: 0.5rem 0.75rem;
         border: 1px solid #e2e8f0;
         font-size: 0.9rem;
+        white-space: nowrap;
     }
 
     .report-table td:first-child {
-        width: 40%;
+        width: 30%;
         background: #f8fafc;
         font-weight: 600;
     }
+
+.report-table .divider {
+    padding: 0 0.75rem;
+    color: #94a3b8;
+    font-weight: bold;
+    width: 20px;
+}
+
+.report-table .text-center {
+    text-align: center;
+    white-space: nowrap;
+}
 
     .report-drivers {
         width: 100%;

@@ -185,7 +185,6 @@ window.app = (() => {
                 <td>
                     <div class="driver-info">
                         <span class="driver-name">${escapeHtml(driver.name)}</span>
-                        <span class="driver-vehicle">${escapeHtml(driver.vehicle)}</span>
                     </div>
                 </td>
                 <td class="text-center">
@@ -197,8 +196,12 @@ window.app = (() => {
                     <div class="driver-actions">
                         ${!driver.delivered ? `
                             <button class="btn-action deliver" onclick="app.deliverDriver('${driver.id}')" title="Marcar entregado">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12L10 17L19 8"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"/>
                                 </svg>
                             </button>
                         ` : `
@@ -237,7 +240,8 @@ window.app = (() => {
 
     function showIngresoForm() {
         document.getElementById('ingresoForm').reset();
-        document.getElementById('ingresoDate').value = getDateKey();
+        const today = getDateKey();
+        document.getElementById('ingresoDate').value = today.replace(/\//g, '-');
         openModal('modalIngreso');
         setTimeout(() => document.getElementById('ingresoAmount').focus(), 100);
     }
@@ -261,12 +265,10 @@ window.app = (() => {
     }
 
     // ---- Report Modal ----
-    let availableDates = [];
 
     function showReportModal() {
-        document.getElementById('reportFrom').value = '';
-        document.getElementById('reportTo').value = '';
-        document.getElementById('reportPreview').style.display = 'none';
+        const select = document.getElementById('reportDate');
+        select.innerHTML = '<option value="">-- Seleccionar --</option>';
         openModal('modalReport');
         loadAvailableDatesForReport();
     }
@@ -277,101 +279,69 @@ window.app = (() => {
 
     async function loadAvailableDatesForReport() {
         try {
-            availableDates = await apiLoadAllDates();
-            const fromSelect = document.getElementById('reportFrom');
-            const toSelect = document.getElementById('reportTo');
-            fromSelect.innerHTML = '<option value="">Seleccionar</option>';
-            toSelect.innerHTML = '<option value="">Seleccionar</option>';
-            availableDates.forEach(d => {
-                fromSelect.innerHTML += `<option value="${d.key}">${d.display}</option>`;
-                toSelect.innerHTML += `<option value="${d.key}">${d.display}</option>`;
+            const dates = await apiLoadAllDates();
+            const select = document.getElementById('reportDate');
+            dates.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.key;
+                opt.textContent = d.display;
+                select.appendChild(opt);
             });
         } catch (e) {
             console.error('Error loading dates:', e);
         }
     }
 
-    function buildDatesList() {
-        const fromKey = document.getElementById('reportFrom').value.replace(/-/g, '/');
-        const toKey = document.getElementById('reportTo').value.replace(/-/g, '/');
-        if (!fromKey || !toKey) return null;
-        const dates = availableDates
-            .filter(d => d.key >= fromKey && d.key <= toKey)
-            .sort((a, b) => a.key.localeCompare(b.key));
-        if (!dates.length) return null;
-        document.getElementById('reportPreview').style.display = 'block';
-        document.getElementById('reportDatesList').innerHTML = dates.map(d => d.display).join(' → ');
-        return dates;
-    }
-
     async function generateReport() {
-        const dates = buildDatesList();
-        if (!dates) {
-            alert('Selecciona un rango de fechas válido.');
+        const dateKey = document.getElementById('reportDate').value;
+        if (!dateKey) {
+            alert('Selecciona una fecha válida.');
             return;
         }
 
         closeReportModal();
         const printEl = document.getElementById('printReport');
-        let rows = '';
-        let totalIngreso = 0, totalAsignado = 0, totalAlmacenado = 0;
-
-        for (const date of dates) {
-            let dayData;
-            try {
-                dayData = await apiLoadDayDataByDate(date.key);
-            } catch {
-                continue;
-            }
-            totalIngreso += dayData.ingreso || 0;
-            totalAsignado += dayData.asignado || 0;
-            totalAlmacenado += dayData.almacenado || 0;
-
-            let driverRows = '';
-            if (dayData.drivers.length) {
-                driverRows = dayData.drivers.map(d => `
-                    <tr>
-                        <td>${escapeHtml(d.name)}</td>
-                        <td>${escapeHtml(d.vehicle)}</td>
-                        <td class="text-center">${formatNumber(d.liters)} L</td>
-                        <td class="text-center">${d.delivered ? '✓' : '—'}</td>
-                    </tr>`).join('');
-            }
-
-            rows += `
-                <div class="report-section">
-                    <h2 class="report-date">Reporte — ${date.display}</h2>
-                    <table class="report-table">
-                        <tr><td><strong>Ingreso</strong></td><td>${formatNumber(dayData.ingreso)} L</td></tr>
-                        <tr><td><strong>Asignado</strong></td><td>${formatNumber(dayData.asignado)} L</td></tr>
-                        <tr><td><strong>Almacenado</strong></td><td>${formatNumber(dayData.almacenado)} L</td></tr>
-                    </table>
-                    ${driverRows ? `
-                        <table class="report-drivers">
-                            <thead><tr><th>Chofer</th><th>Vehículo</th><th class="text-center">Litros</th><th class="text-center">Entregado</th></tr></thead>
-                            <tbody>${driverRows}</tbody>
-                        </table>
-                    ` : ''}
-                </div>`;
+        let dayData;
+        try {
+            dayData = await apiLoadDayDataByDate(dateKey);
+        } catch {
+            alert('No se pudieron cargar los datos de la fecha seleccionada.');
+            return;
         }
+
+        const driverRows = dayData.drivers.map(d => `
+            <tr>
+                <td>${escapeHtml(d.name)}</td>
+                <td class="text-center">${formatNumber(d.liters)} L</td>
+                <td class="text-center">${d.delivered ? '✓' : '—'}</td>
+            </tr>`).join('');
+
+        const displayDate = dateKey.split('/').reverse().join('/');
 
         printEl.innerHTML = `
             <div class="report-page">
                 <h1 class="report-title">Control de Combustible — Reporte</h1>
-                <p class="report-subtitle">${dates[0].display} al ${dates[dates.length - 1].display}</p>
+                <p class="report-subtitle">${displayDate}</p>
                 <p class="report-generated">Generado: ${new Date().toLocaleString('es-VE')}</p>
-                ${rows}
-                <div class="report-summary">
-                    <h2>Resumen</h2>
+                <div class="report-section">
                     <table class="report-table">
-                        <tr><td><strong>Total Ingresado</strong></td><td>${formatNumber(totalIngreso)} L</td></tr>
-                        <tr><td><strong>Total Asignado</strong></td><td>${formatNumber(totalAsignado)} L</td></tr>
-                        <tr><td><strong>Total Almacenado</strong></td><td>${formatNumber(totalAlmacenado)} L</td></tr>
+                        <tr>
+                            <td><strong>Ingreso</strong></td><td class="text-center">${formatNumber(dayData.ingreso)} L</td>
+                            <td class="divider">|</td>
+                            <td><strong>Asignado</strong></td><td class="text-center">${formatNumber(dayData.asignado)} L</td>
+                            <td class="divider">|</td>
+                            <td><strong>Almacenado</strong></td><td class="text-center">${formatNumber(dayData.almacenado)} L</td>
+                        </tr>
                     </table>
+                    ${dayData.drivers.length ? `
+                        <table class="report-drivers">
+                            <thead><tr><th>Chofer</th><th class="text-center">Litros</th><th class="text-center">Entregado</th></tr></thead>
+                            <tbody>${driverRows}</tbody>
+                        </table>
+                    ` : ''}
                 </div>
             </div>`;
 
-        // Show print view, trigger print, hide it after
         printEl.style.display = 'block';
         setTimeout(() => {
             window.print();
@@ -383,16 +353,14 @@ window.app = (() => {
     async function saveDriver(e) {
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         const name = document.getElementById('driverName').value.trim();
-        const vehicle = document.getElementById('driverVehicle').value.trim();
         const liters = parseFloat(document.getElementById('driverLiters').value) || 0;
 
-        if (!name || !vehicle || liters <= 0) return;
+        if (!name || liters <= 0) return;
 
         const dateKey = getDateKey();
         const driver = {
             id: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
             name,
-            vehicle,
             liters,
             delivered: false,
             timestamp: new Date().toISOString()
