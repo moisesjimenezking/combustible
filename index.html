@@ -31,19 +31,28 @@
                 </div>
             </div>
             <div class="header-right">
-                <div class="venezuela-time" id="venezuelaTime"></div>
-                <button class="btn-report" onclick="app.showReportModal()" title="Generar reporte">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 2v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V2M6 2h4M5 7h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <div class="header-time">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M7 4v3l2 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                     </svg>
-                    Reporte
-                </button>
-                <button class="btn-icon btn-reset-all" onclick="app.doFullReset()" title="Reiniciar todo">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M9 2a7 7 0 1 0 0 14" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M9 2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                </button>
+                    <span class="venezuela-time" id="venezuelaTime"></span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-report" onclick="app.showReportModal()">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 2v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V2M6 2h4M5 7h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span>Reporte</span>
+                    </button>
+                    <button class="btn btn-danger-reset" onclick="app.doFullReset()">
+                        <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
+                            <path d="M9 2a7 7 0 1 0 0 14" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M9 2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span>Reiniciar</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -167,11 +176,11 @@
                                   fill="url(#canGrad)" stroke="#cbd5e1" stroke-width="2"/>
 
                             <!-- Fuel level -->
-                            <rect id="canFuel" x="21" y="72" width="198" height="238"
+                            <rect id="canFuel" x="21" y="280" width="198" height="0"
                                   fill="url(#fuelGrad)" clip-path="url(#canClip)" opacity="0.95"/>
 
                             <!-- Wave surface -->
-                            <path id="canWave" d="M30 42 Q50 38 85 42 Q120 46 155 42 Q190 38 210 42 L210 42 L30 42 Z"
+                            <path id="canWave" d="M30 280 Q50 276 85 280 Q120 284 155 280 Q190 276 210 280 L210 280 L30 280 Z"
                                   fill="url(#fuelGrad)" clip-path="url(#canClip)" opacity="0.9"/>
 
                             <!-- Horizontal bands -->
@@ -210,9 +219,17 @@
 
     <!-- Modal: Add Driver -->
     <div class="modal-overlay" id="modalDriver">
-        <div class="modal">
+        <div class="modal modal-animate">
             <div class="modal-header">
-                <h3>Registrar Chofer</h3>
+                <div class="modal-header-content">
+                    <div class="modal-header-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="10" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M3 18c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>Nuevo Chofer</h3>
+                </div>
                 <button class="modal-close" onclick="app.closeDriverForm()">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -220,21 +237,43 @@
                 </button>
             </div>
             <form id="driverForm" onsubmit="app.saveDriver(event)">
-                <div class="form-group">
+                <div class="form-group form-group-icon">
                     <label for="driverName">Nombre del Chofer</label>
-                    <input type="text" id="driverName" required placeholder="Ej: Juan Pérez">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M3 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                        </svg>
+                        <input type="text" id="driverName" required placeholder="Ej: Juan Pérez">
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group form-group-icon">
                     <label for="driverVehicle">Vehículo</label>
-                    <input type="text" id="driverVehicle" required placeholder="Ej: Camión T-100">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect x="2" y="5" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M4 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.3"/>
+                        </svg>
+                        <input type="text" id="driverVehicle" required placeholder="Ej: Camión T-100">
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group form-group-icon">
                     <label for="driverLiters">Litros Asignados</label>
-                    <input type="number" id="driverLiters" required min="0.1" step="0.1" placeholder="0">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2v12M5 5l3-3 3 3M4 12v1a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="number" id="driverLiters" required min="0.1" step="0.1" placeholder="0">
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeDriverForm()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M13 5L6 12 3 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Guardar
+                    </button>
                 </div>
             </form>
         </div>
@@ -242,9 +281,16 @@
 
     <!-- Modal: Add Ingreso -->
     <div class="modal-overlay" id="modalIngreso">
-        <div class="modal">
+        <div class="modal modal-animate">
             <div class="modal-header">
-                <h3>Ingresar Litros al Tanque</h3>
+                <div class="modal-header-content">
+                    <div class="modal-header-icon modal-header-icon--green">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 3v14M6 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3>Ingresar Combustible</h3>
+                </div>
                 <button class="modal-close" onclick="app.closeIngresoForm()">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -252,17 +298,33 @@
                 </button>
             </div>
             <form id="ingresoForm" onsubmit="app.saveIngreso(event)">
-                <div class="form-group">
+                <div class="form-group form-group-icon">
                     <label for="ingresoAmount">Cantidad (litros)</label>
-                    <input type="number" id="ingresoAmount" required min="0.1" step="0.1" placeholder="0">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2v12M5 5l3-3 3 3M4 12v1a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="number" id="ingresoAmount" required min="0.1" step="0.1" placeholder="0.0">
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group form-group-icon">
                     <label for="ingresoDate">Fecha</label>
-                    <input type="date" id="ingresoDate" required>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M2 6h12M5 2v3M11 2v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                        </svg>
+                        <input type="date" id="ingresoDate" required>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="app.closeIngresoForm()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Ingresar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M13 5L6 12 3 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Ingresar
+                    </button>
                 </div>
             </form>
         </div>
