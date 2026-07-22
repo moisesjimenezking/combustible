@@ -3,7 +3,7 @@
  * Uses Cloudflare Worker API for data persistence
  */
 
-const app = (() => {
+window.app = (() => {
     // API Configuration
     const API_BASE = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '';
 

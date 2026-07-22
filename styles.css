@@ -698,21 +698,6 @@ body {
     transition: transform 0.2s ease;
 }
 
-.modal-animate {
-    animation: modalSlideIn 0.25s ease-out forwards;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: scale(0.9) translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1) translateY(0);
-        opacity: 1;
-    }
-}
-
 .modal-overlay.active .modal {
     transform: scale(1);
 }
